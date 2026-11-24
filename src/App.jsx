@@ -1,122 +1,71 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import api from './services/api';
+import PokemonCard from './components/PokemonCard';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [todosPokemons, setTodosPokemons] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
+  const [busca, setBusca] = useState('');
+
+  useEffect(() => {
+    async function carregarLista() {
+      try {
+        setCarregando(true);
+        // Carrega todos os pokémons em segundo plano para permitir buscar qualquer um
+        const response = await api.get('/pokemon?limit=1000');
+        setTodosPokemons(response.data.results);
+      } catch (err) {
+        console.log(err);
+        setErro('Erro ao conectar com a PokéAPI.');
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregarLista();
+  }, []);
+
+  const resultados = busca.trim() === ''
+    ? []
+    : todosPokemons.filter((pokemon) =>
+        pokemon.name.toLowerCase().includes(busca.toLowerCase())
+      );
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="pagina">
+      <div className="caixa-busca">
+        <h1>Buscar Pokémon</h1>
+        <input
+          type="text"
+          placeholder="Ex: pikachu, charizard, mewtwo..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+        />
+      </div>
 
-      <div className="ticks"></div>
+      {carregando && <p className="texto-status">Carregando dados...</p>}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {erro && <p className="texto-erro">{erro}</p>}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {!carregando && !erro && busca.trim() !== '' && (
+        <div className="resultados">
+          {resultados.length > 0 ? (
+            resultados.map((pokemon) => (
+              <PokemonCard
+                key={pokemon.name}
+                nome={pokemon.name}
+                url={pokemon.url}
+              />
+            ))
+          ) : (
+            <p className="texto-status">Nenhum Pokémon encontrado.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
